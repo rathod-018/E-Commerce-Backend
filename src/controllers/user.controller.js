@@ -2,12 +2,13 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { User } from "../models/user.models.js";
+import { uploadOnCludinary, deleteFromCludinary } from "../utils/cludinary.js";
 
 
 
 const registerUser = asyncHandler(async (req, res) => {
 
-    
+
     const { name, email, username, password, role } = req.body
 
     if ([name, email, username, password, role].some((item) => item?.trim() === "")) {
@@ -31,6 +32,11 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Avatar file is missing")
     }
 
+    const avatar = await uploadOnCludinary(avatarLocalPath)
+    if (!avatar) {
+        throw new ApiError(400, "avatar is required")
+    }
+
     const user = await User.create({
         name,
         email,
@@ -38,8 +44,8 @@ const registerUser = asyncHandler(async (req, res) => {
         password,
         role,
         avatar: {
-            url: avatarLocalPath,
-            public_id: " "
+            url: avatar?.secure_url,
+            public_id: avatar?.public_id
         }
     })
 
