@@ -35,9 +35,6 @@ const userSchema = new Schema(
         avatar: {
             url: { type: String },
             public_id: { type: String }
-        },
-        refreshToken: {
-            type: String
         }
     },
     {
