@@ -1,7 +1,3 @@
-//take token from cookie or AUthentication header
-// verify it using jwt.verify
-// using id find user and add it to req.user
-
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
 import jwt from "jsonwebtoken"
