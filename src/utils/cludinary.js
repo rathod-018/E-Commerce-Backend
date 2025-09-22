@@ -14,12 +14,12 @@ const uploadOnCludinary = async function (localFilePath) {
 
         if (!localFilePath) return null
 
-        const result = await cloudinary.v2.uploader.upload(localFilePath, { resource_type: "auto" })
+        const result = await cloudinary.uploader.upload(localFilePath, { resource_type: "auto" })
         console.log("File uploaded successfully", result.url)
-        // fs.unlinkSync(localFilePath)
+        fs.unlinkSync(localFilePath)
         return result
     } catch (error) {
-        // fs.unlinkSync(localFilePath)
+        fs.unlinkSync(localFilePath)
         console.log("Error while uploading file on cludinary")
         throw error.message
     }
@@ -41,3 +41,5 @@ const deleteFromCludinary = async function (public_id, { resource_type = "auto" 
         throw error.message
     }
 }
+
+export { uploadOnCludinary, deleteFromCludinary }
