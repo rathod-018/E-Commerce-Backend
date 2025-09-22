@@ -49,7 +49,7 @@ const registerUser = asyncHandler(async (req, res) => {
         }
     })
 
-    const createdUser = await User.findById(user._id).select("-password -refreshToken")
+    const createdUser = await User.findById(user._id).select("-password")
 
     if (!createdUser) {
         throw new ApiError(400, "Error while creating user")
@@ -60,6 +60,43 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 
 })
+
+// admin registration
+const registerAdmin = asyncHandler(async (req, res) => {
+    const { name, email, username, password } = req.body
+
+    if ([name, email, username, password].some((item) => item?.trim() === "")) {
+        throw new ApiError(400, "All fields are required !!")
+    }
+
+    const userExist = await User.findOne({
+        $or: [{ email }, { username }]
+    })
+
+    if (userExist) {
+        throw new ApiError(400, "Admin with same username or email alredy exist")
+    }
+
+    const admin = await User.create({
+        name,
+        email,
+        username,
+        password,
+        role: "admin"
+    })
+
+    const createdAdmin = await User.findById(admin._id).select("-password")
+
+    if (!createdAdmin) {
+        throw new ApiError(400, "Error while creating admin")
+    }
+
+    return res.status(201).json(
+        new ApiResponse(201, createdAdmin, "Admin created successfully")
+    )
+
+})
+
 
 const logInUser = asyncHandler(async (req, res) => {
     // algo
@@ -109,4 +146,24 @@ const logInUser = asyncHandler(async (req, res) => {
         )
 })
 
-export { registerUser, logInUser }
+const logoutUser = asyncHandler(async (req, res) => {
+    //get userId from req.user
+    const user = await User.findById(req.user?._id)
+    if (!user) {
+        throw new ApiError(404, "User NOT found")
+    }
+
+    const option = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res.status(200)
+        .clearCookie("accessToken", option)
+        .json(
+            new ApiResponse(200, {}, "User Logeed Out")
+        )
+})
+
+
+export { registerUser, registerAdmin, logInUser, logoutUser }
