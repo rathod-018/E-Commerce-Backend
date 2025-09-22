@@ -61,5 +61,52 @@ const registerUser = asyncHandler(async (req, res) => {
 
 })
 
+const logInUser = asyncHandler(async (req, res) => {
+    // algo
+    // get user name email and password from body
+    // validate --empty
+    // find user by user name
+    // generate access token. send via cookie
+    // return responce without password
 
-export { registerUser }
+    const { username, email, password } = req.body
+
+    if (!username.trim() && !email.trim()) {
+        throw new ApiError(400, "Email or Username is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "Invalid Username or Email")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+    if (!isPasswordValid) {
+        throw new ApiError(400, "Invalid password")
+    }
+
+    const accesstoken = user.generateAccessToken()
+
+    const loggedInUser = await User.findById(user._id).select("-password")
+
+    const option = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res.status(200)
+        .cookie("accessToken", accesstoken, option)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedInUser, accesstoken
+                },
+                "User loggedIn successfully")
+        )
+})
+
+export { registerUser, logInUser }
