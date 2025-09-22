@@ -61,6 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 })
 
+
 // admin registration
 const registerAdmin = asyncHandler(async (req, res) => {
     const { name, email, username, password } = req.body
@@ -96,6 +97,7 @@ const registerAdmin = asyncHandler(async (req, res) => {
     )
 
 })
+
 
 
 const logInUser = asyncHandler(async (req, res) => {
@@ -146,8 +148,10 @@ const logInUser = asyncHandler(async (req, res) => {
         )
 })
 
+
+
 const logoutUser = asyncHandler(async (req, res) => {
-    //get userId from req.user
+
     const user = await User.findById(req.user?._id)
     if (!user) {
         throw new ApiError(404, "User NOT found")
@@ -166,4 +170,37 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 
-export { registerUser, registerAdmin, logInUser, logoutUser }
+
+const changePassword = asyncHandler(async (req, res) => {
+
+    const { oldPassword, newPassword } = req.body
+    if (!oldPassword.trim() || !newPassword.trim()) {
+        throw new ApiError(400, "new password ")
+    }
+    const user = await User.findById(req.user?._id)
+
+    const isOldPasswordValid = await user.isPasswordCorrect(oldPassword)
+
+    if (!isOldPasswordValid) {
+        throw new ApiError(400, "Incorrect Old password")
+    }
+    if (oldPassword === newPassword) {
+        throw new ApiError(400, "New password must be different from Old password")
+    }
+    user.password = newPassword
+
+    await user.save()
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Password updated successfully")
+    )
+})
+
+
+export {
+    registerUser,
+    registerAdmin,
+    logInUser,
+    logoutUser,
+    changePassword
+}

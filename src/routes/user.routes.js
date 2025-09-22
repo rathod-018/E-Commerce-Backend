@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+    changePassword,
     logInUser,
     logoutUser,
     registerAdmin,
@@ -18,6 +19,7 @@ router.route("/login").post(logInUser)
 // secured routes
 
 router.route("/logout").post(verifyJWT, logoutUser)
+router.route("/change-password").post(verifyJWT, changePassword)
 
 // admin routes
 
