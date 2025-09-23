@@ -2,7 +2,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { User } from "../models/user.models.js";
-import { uploadOnCludinary, deleteFromCludinary } from "../utils/cludinary.js";
+import { uploadOnCludinary } from "../utils/cludinary.js";
+import { generateAccessTokenAndRefreshToken } from "../utils/generateToken.js"
+import jwt from "jsonwebtoken"
 
 
 
@@ -127,9 +129,9 @@ const logInUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid password")
     }
 
-    const accesstoken = user.generateAccessToken()
+    const { accesstoken, refreshToken } = await generateAccessTokenAndRefreshToken(user._id)
 
-    const loggedInUser = await User.findById(user._id).select("-password")
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     const option = {
         httpOnly: true,
@@ -138,11 +140,12 @@ const logInUser = asyncHandler(async (req, res) => {
 
     return res.status(200)
         .cookie("accessToken", accesstoken, option)
+        .cookie("refreshToken", refreshToken, option)
         .json(
             new ApiResponse(
                 200,
                 {
-                    user: loggedInUser, accesstoken
+                    user: loggedInUser, accesstoken, refreshToken
                 },
                 "User loggedIn successfully")
         )
@@ -171,10 +174,42 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 
 
+const refreshAccessToken = asyncHandler(async () => {
+    const currentRefreshToken = req.cookies("refreshToken") || req.body?.refreshToken
+
+    if (!currentRefreshToken) {
+        throw new ApiError(401, "Unauthorized request")
+    }
+
+    const decodedRefreshToken = jwt.verify(currentRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+
+    const user = await User.findById(decodedRefreshToken._id)
+    if (!user) {
+        throw new ApiError(401, "Invalid refreshToken")
+    }
+
+    const { accesstoken, refreshToken } = await generateAccessTokenAndRefreshToken(user_id)
+
+    const option = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res.status(200)
+        .cookie("accesstoken", accesstoken, option)
+        .cookie("refreshToken", refreshToken, option)
+        .json(
+            new ApiResponse(200, { accesstoken, refreshToken }, "Access token refreshed successfully")
+        )
+
+})
+
+
+
 export {
     registerUser,
     registerAdmin,
     logInUser,
     logoutUser,
-    changePassword
+    refreshAccessToken
 }

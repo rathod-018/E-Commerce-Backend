@@ -1,5 +1,5 @@
-import { User } from "../models/user.models"
-import { ApiError } from "./ApiError"
+import { User } from "../models/user.models.js"
+import { ApiError } from "./ApiError.js"
 
 const generateAccessTokenAndRefreshToken = async (userId) => {
     try {
@@ -20,4 +20,6 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
         throw new ApiError(400, "Error while generation access and refresh token")
     }
 }
+
+export { generateAccessTokenAndRefreshToken }
 

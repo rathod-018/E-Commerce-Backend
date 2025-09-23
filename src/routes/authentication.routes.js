@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
     logInUser,
     logoutUser,
+    refreshAccessToken,
     registerAdmin,
     registerUser
 } from "../controllers/authentication.controller.js";
@@ -14,6 +15,8 @@ const router = Router()
 router.route("/create").post(upload.single("avatar"), registerUser)
 
 router.route("/login").post(logInUser)
+
+router.route("/refresh-token").post(refreshAccessToken)
 
 // secured route
 router.route("/logout").post(verifyJWT, logoutUser)
