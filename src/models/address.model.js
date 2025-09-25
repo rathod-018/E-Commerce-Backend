@@ -22,7 +22,12 @@ const addressSchema = new Schema(
             type: String,
             required: true
         },
-        user: {
+        addressType: {
+            type: String,
+            required: true,
+            enum: ["home", "work"]
+        },
+        owner: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
         }
