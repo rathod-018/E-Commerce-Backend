@@ -6,8 +6,8 @@ import { Categories } from "../models/categories.model.js"
 
 const createProduct = asyncHandler(async (req, res) => {
 
-    const { userId } = req.params
-    if (!userId.trim() || !isValidObjectId(userId)) {
+    const { sellerId } = req.params
+    if (!sellerId?.trim() || !isValidObjectId(sellerId)) {
         throw new ApiError(400, "invalid userId")
     }
 
@@ -33,7 +33,7 @@ const createProduct = asyncHandler(async (req, res) => {
             price,
             stockQty,
             category,
-            sellerId: userId,
+            sellerId,
             category: getCategory._id
         })
 
@@ -120,7 +120,6 @@ const deleteProduct = asyncHandler(async (req, res) => {
 const listProducts = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 10
     const page = parseInt(req.query.page) || 1
-    const skip = (page - 1) * limit
     const { sortBy } = req.query.sortBy || "createdAt"
     const sortOrder = req.query.sortOrder === "desc" ? -1 : 1
 
@@ -148,14 +147,22 @@ const listProducts = asyncHandler(async (req, res) => {
                 as: "category"
             }
         },
-        { $unwind: "$seller" },
-        { $unwind: "$category" }
+        {
+            $unwind: "$seller"
+        },
+        {
+            $unwind: "$category"
+        },
+        {
+            $sort: {
+                [sortBy]: sortOrder
+            }
+        }
     ])
 
     const option = {
         page,
-        limit,
-        sort: { [sortBy]: sortOrder }
+        limit
     }
 
     const products = await Product.aggregatePaginate(aggregation, option)
@@ -165,3 +172,11 @@ const listProducts = asyncHandler(async (req, res) => {
     )
 
 })
+
+export {
+    createProduct,
+    getProduct,
+    updateProduct,
+    deleteProduct,
+    listProducts
+}
