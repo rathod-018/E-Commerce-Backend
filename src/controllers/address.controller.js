@@ -166,7 +166,7 @@ const updateAddress = asyncHandler(async (req, res) => {
             new: true
         })
 
-    if (!updatedAddress) {
+    if (!address) {
         throw new ApiError(400, "Error while updating address")
     }
 
