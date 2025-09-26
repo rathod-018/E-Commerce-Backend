@@ -27,7 +27,7 @@ const addressSchema = new Schema(
             required: true,
             enum: ["home", "work"]
         },
-        owner: {
+        userId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
         }

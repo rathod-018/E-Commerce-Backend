@@ -30,7 +30,7 @@ const addAddress = asyncHandler(async (req, res) => {
             postalCode,
             country,
             addressType,
-            owner: userId
+            userId
         })
 
     const createdAddress = await Address.findById(address._id)
@@ -56,13 +56,13 @@ const getAlladdress = asyncHandler(async (req, res) => {
     const alladdress = await Address.aggregate([
         {
             $match: {
-                owner: new mongoose.Types.ObjectId(userId)
+                userId: new mongoose.Types.ObjectId(userId)
             }
         },
         {
             $lookup: {
                 from: "users",
-                localField: "owner",
+                localField: "userId",
                 foreignField: "_id",
                 as: "owner",
                 pipeline: [
@@ -108,12 +108,13 @@ const getAddressById = asyncHandler(async (req, res) => {
         {
             $lookup: {
                 from: "users",
-                localField: "owner",
+                localField: "userId",
                 foreignField: "_id",
                 as: "owner",
                 pipeline: [
                     {
                         $project: {
+                            _id: 1,
                             name: 1,
                             email: 1
                         }
