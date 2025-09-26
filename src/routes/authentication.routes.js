@@ -8,7 +8,7 @@ import {
 } from "../controllers/authentication.controller.js";
 import { upload } from "../middleware/multer.middleware.js"
 import { verifyJWT } from "../middleware/auth.middleware.js";
-import { verifyAdmin } from "../middleware/verifyAdmin.middleware.js";
+import { verifyRole } from "../middleware/verifyRole.middleware.js"
 
 const router = Router()
 
@@ -23,6 +23,6 @@ router.route("/logout").post(verifyJWT, logoutUser)
 
 // admin routes
 
-router.route("/admin/create").post(verifyJWT, verifyAdmin, registerAdmin)
+router.route("/admin/create").post(verifyJWT, verifyRole("admin"), registerAdmin)
 
 export default router
