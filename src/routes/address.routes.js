@@ -1,22 +1,28 @@
 import { Router } from "express";
 import { verifyJWT } from "../middleware/auth.middleware.js"
-import { verifyOwnerOrAdmin } from "../middleware/verifyOwnerOrAdmin.middleware.js";
-import { addAddress, deleteAddress, getAddressById, getAlladdress } from "../controllers/address.controller.js";
-import { getCurrentUserIdFromParams, getUserIdFromAddress } from "../middleware/getUserId.js"
+import {
+    addAddress,
+    getAlladdress,
+    getAddressById,
+    updateAddress,
+    deleteAddress
+} from "../controllers/address.controller.js";
+import { verifyRole } from "../middleware/verifyRole.middleware.js"
 
 
 const router = Router()
 
 router.use(verifyJWT)
+router.use(verifyRole("customer", "admin"))
 
 router.route("/user/:userId")
-    .post(verifyOwnerOrAdmin(getCurrentUserIdFromParams), addAddress)
-    .get(verifyOwnerOrAdmin(getCurrentUserIdFromParams), getAlladdress)
+    .post(addAddress)
+    .get(getAlladdress)
 
 router.route("/:addressId")
-    .get(verifyOwnerOrAdmin(getUserIdFromAddress), getAddressById)
-    .post(verifyOwnerOrAdmin(getUserIdFromAddress), getAddressById)
-    .delete(verifyOwnerOrAdmin(getUserIdFromAddress), deleteAddress)
+    .get(getAddressById)
+    .post(updateAddress)
+    .delete(deleteAddress)
 
 
 export default router
