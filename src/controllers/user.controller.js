@@ -166,10 +166,10 @@ const getAllUser = asyncHandler(async (req, res) => {
         limit
     }
 
-    const result = await User.mongooseAggregatePaginate(aggrigate, option)
+    const result = await User.aggregatePaginate(aggrigate, option)
 
     return res.status(200).json(
-        new ApiError(200, result, "All users fetched successfully")
+        new ApiResponse(200, result, "All users fetched successfully")
     )
 
 })
