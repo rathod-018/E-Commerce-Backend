@@ -22,7 +22,7 @@ const productSchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
         },
-        categorie: {
+        category: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Categories"
         }
