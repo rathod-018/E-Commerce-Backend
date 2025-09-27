@@ -50,10 +50,10 @@ const getAllCategories = asyncHandler(async (req, res) => {
 })
 
 const updateCategory = asyncHandler(async (req, res) => {
-    const { id } = req.params
+    const { categoryId } = req.params
     const { name, description } = req.body
 
-    if (!id.trim() || !isValidObjectId(id)) {
+    if (!categoryId.trim() || !isValidObjectId(categoryId)) {
         throw new ApiError(400, "Invalid Id")
     }
 
@@ -61,9 +61,9 @@ const updateCategory = asyncHandler(async (req, res) => {
         throw new ApiError(400, "all fields are required")
     }
 
-    const isCategoryExist = await Categories.findById(id)
+    const isCategoryExist = await Categories.findById(categoryId)
     if (!isCategoryExist) {
-        throw new ApiError(400, "Invalid Id")
+        throw new ApiError(400, "Invalid categoryId")
     }
 
     const updatedCategory = await Categories.findByIdAndUpdate(
@@ -86,12 +86,12 @@ const updateCategory = asyncHandler(async (req, res) => {
 })
 
 const deleteCategory = asyncHandler(async (req, res) => {
-    const { id } = req.params
-    if (!id.trim() || !isValidObjectId(id)) {
+    const { categoryId } = req.params
+    if (!categoryId.trim() || !isValidObjectId(categoryId)) {
         throw new ApiError(400, "Invalid Id")
     }
 
-    const deletedCategory = await Categories.findByIdAndDelete(id)
+    const deletedCategory = await Categories.findByIdAndDelete(categoryId)
 
     if (!deletedCategory) {
         throw new ApiError(400, "Error while deleting category")
