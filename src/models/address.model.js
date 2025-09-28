@@ -2,6 +2,11 @@ import mongoose, { Schema } from "mongoose";
 
 const addressSchema = new Schema(
     {
+        name: {
+            type: String,
+            required: true,
+            lowercase: true,
+        },
         street: {
             type: String,
             required: true

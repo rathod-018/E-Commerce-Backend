@@ -12,9 +12,9 @@ const addAddress = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid userId")
     }
 
-    const { street, city, state, postalCode, country, addressType } = req.body
+    const { name, street, city, state, postalCode, country, addressType } = req.body
 
-    if ([street, city, state, postalCode, country, addressType].some((val) => val.trim() === "")) {
+    if ([name, street, city, state, postalCode, country, addressType].some((val) => val.trim() === "")) {
         throw new ApiError(400, "All fields are required")
     }
 
@@ -24,6 +24,7 @@ const addAddress = asyncHandler(async (req, res) => {
 
     const address = await Address.create(
         {
+            name,
             street,
             city,
             state,
@@ -141,13 +142,13 @@ const getAddressById = asyncHandler(async (req, res) => {
 
 const updateAddress = asyncHandler(async (req, res) => {
     const { addressId } = req.params
-    const { street, city, state, postalCode, country, addressType } = req.body
+    const { name, street, city, state, postalCode, country, addressType } = req.body
 
     if (!addressId.trim() || !isValidObjectId(addressId)) {
         throw new ApiError(400, "Invalid addressId")
     }
 
-    if ([street, city, state, postalCode, country, addressType].some((val) => val.trim() === "")) {
+    if ([name, street, city, state, postalCode, country, addressType].some((val) => val.trim() === "")) {
         throw new ApiError(400, "All fields are required")
     }
 
@@ -155,6 +156,7 @@ const updateAddress = asyncHandler(async (req, res) => {
     const address = await Address.findByIdAndUpdate(
         addressId,
         {
+            name,
             street,
             city,
             state,
