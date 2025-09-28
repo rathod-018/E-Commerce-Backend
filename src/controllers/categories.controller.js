@@ -67,7 +67,7 @@ const updateCategory = asyncHandler(async (req, res) => {
     }
 
     const updatedCategory = await Categories.findByIdAndUpdate(
-        id,
+        categoryId,
         {
             name, description
         },
