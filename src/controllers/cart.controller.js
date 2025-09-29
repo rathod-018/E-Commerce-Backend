@@ -4,6 +4,8 @@ import { ApiResponse } from "../utils/ApiResponse.js"
 import { Product } from "../models/product.model.js"
 import mongoose, { isValidObjectId } from "mongoose"
 import { Cart } from "../models/cart.model"
+import { Address } from "../models/address.model.js"
+import { Order } from "../models/order.model.js"
 
 
 const addCartItem = asyncHandler(async (req, res) => {
@@ -37,7 +39,7 @@ const addCartItem = asyncHandler(async (req, res) => {
         })
     }
 
-    let cartItem = cart.items.find((item) => item.product?.toString() === product._id.toString())
+    let cartItem = cart.items.find((item) => item.productId?.toString() === product._id.toString())
 
     if (cartItem) {
         cartItem.quantity += quantity
@@ -45,7 +47,7 @@ const addCartItem = asyncHandler(async (req, res) => {
     else {
         cart.items.push(
             {
-                product: productId,
+                productId: product._id,
                 quantity
             })
     }
@@ -88,7 +90,7 @@ const updateCartItem = asyncHandler(async (req, res) => {
         throw new ApiError(400, "User does not have any active cart")
     }
 
-    const cartItem = cart.items?.find((item) => item.product?.toString() === product._id.toString())
+    const cartItem = cart.items?.find((item) => item.productId?.toString() === product._id.toString())
 
     if (!cartItem) {
         throw new ApiError(404, "Item not found in cart")
@@ -125,7 +127,7 @@ const removeCartItem = asyncHandler(async (req, res) => {
     }
 
     const itemExist = cart.items?.some(
-        (item) => item.product?.toString() === product._id.toString()
+        (item) => item.productId?.toString() === product._id.toString()
     )
 
     if (!itemExist) {
@@ -133,7 +135,7 @@ const removeCartItem = asyncHandler(async (req, res) => {
     }
 
     cart.items = cart.items?.filter(
-        (item) => item.product?.toString() === product._id.toString()
+        (item) => item.productId?.toString() === product._id.toString()
     )
 
     await cart.save()
@@ -200,12 +202,84 @@ const getCart = asyncHandler(async (req, res) => {
     )
 })
 
-const checkOut = asyncHandler(async (req, res) => { })
+const checkout = asyncHandler(async (req, res) => {
+
+    const userId = req.user._id
+    const { addressId } = req.params
+
+    const cart = await Cart.findOne({ userId, status: "active" }).populate("items.product")
+
+    if (!cart || !cart.items.length) {
+        throw new ApiError(400, "Cart is empty")
+    }
+
+
+    const orderItems = []
+    let totalPrice = 0
+
+    for (const item of cart.items) {
+        const product = item.product
+
+        if (!product) {
+            throw new ApiError(400, "Product not found")
+        }
+
+        if (product.stockQty < item.quantity) {
+            throw new ApiError(400, `Not enogh stock avaliable fro ${product.name}`)
+        }
+
+        orderItems.push({
+            productId: product._id,
+            quantity: item.quantity,
+            price: product.price
+        })
+
+        totalPrice += product.price * item.quantity
+
+        product.stockQty -= item.quantity
+        await product.save();
+    }
+
+
+    // validate address
+
+    if (!addressId || !addressId.trim() || !isValidObjectId(addressId)) {
+        throw new ApiError(400, "Invalid addressId")
+    }
+
+    const address = await Address.findById(addressId)
+
+    if (!address) {
+        throw new ApiError(400, "Invalid addressId")
+    }
+
+
+    // create order
+
+    const order = await Order.create(
+        {
+            userId,
+            items: orderItems,
+            status: "pending",
+            shippindAddress: address._id,
+            totalPrice
+        }
+    )
+
+
+    // clear cart
+    cart.items = []
+    await cart.save()
+
+    return res.status(201).json(
+        new ApiResponse(201, order, "Order placed successfully")
+    )
+})
 
 export {
     addCartItem,
     updateCartItem,
     removeCartItem,
     getCart,
-    checkOut
+    checkout
 }
