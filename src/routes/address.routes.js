@@ -21,7 +21,7 @@ router.route("/user/:userId")
 
 router.route("/:addressId")
     .get(getAddressById)
-    .post(updateAddress)
+    .patch(updateAddress)
     .delete(deleteAddress)
 
 
