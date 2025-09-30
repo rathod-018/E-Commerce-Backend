@@ -129,7 +129,7 @@ const logInUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid password")
     }
 
-    const { accesstoken, refreshToken } = await generateAccessTokenAndRefreshToken(user._id)
+    const { accessToken, refreshToken } = await generateAccessTokenAndRefreshToken(user._id)
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
@@ -139,13 +139,13 @@ const logInUser = asyncHandler(async (req, res) => {
     }
 
     return res.status(200)
-        .cookie("accessToken", accesstoken, option)
+        .cookie("accessToken", accessToken, option)
         .cookie("refreshToken", refreshToken, option)
         .json(
             new ApiResponse(
                 200,
                 {
-                    user: loggedInUser, accesstoken, refreshToken
+                    user: loggedInUser, accessToken, refreshToken
                 },
                 "User loggedIn successfully")
         )
@@ -174,8 +174,8 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 
 
-const refreshAccessToken = asyncHandler(async () => {
-    const currentRefreshToken = req.cookies("refreshToken") || req.body?.refreshToken
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    const currentRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken
 
     if (!currentRefreshToken) {
         throw new ApiError(401, "Unauthorized request")
@@ -188,7 +188,7 @@ const refreshAccessToken = asyncHandler(async () => {
         throw new ApiError(401, "Invalid refreshToken")
     }
 
-    const { accesstoken, refreshToken } = await generateAccessTokenAndRefreshToken(user_id)
+    const { accessToken, refreshToken } = await generateAccessTokenAndRefreshToken(user._id)
 
     const option = {
         httpOnly: true,
@@ -196,10 +196,10 @@ const refreshAccessToken = asyncHandler(async () => {
     }
 
     return res.status(200)
-        .cookie("accesstoken", accesstoken, option)
+        .cookie("accesstoken", accessToken, option)
         .cookie("refreshToken", refreshToken, option)
         .json(
-            new ApiResponse(200, { accesstoken, refreshToken }, "Access token refreshed successfully")
+            new ApiResponse(200, { accessToken, refreshToken }, "Access token refreshed successfully")
         )
 
 })
