@@ -27,7 +27,7 @@ const uploadOnCludinary = async function (localFilePath) {
 
 
 // function to delere files from cludinary
-const deleteFromCludinary = async function (public_id, { resource_type = "auto" }) {
+const deleteFromCludinary = async function (public_id, resource_type = "auto") {
     try {
 
         const result = await cloudinary.uploader.destroy(public_id, { resource_type })
