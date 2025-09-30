@@ -3,9 +3,10 @@ import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { Product } from "../models/product.model.js"
 import mongoose, { isValidObjectId } from "mongoose"
-import { Cart } from "../models/cart.model"
+import { Cart } from "../models/cart.model.js"
 import { Address } from "../models/address.model.js"
 import { Order } from "../models/order.model.js"
+import { OrderItem } from "../models/orderItem.model.js"
 
 
 const addCartItem = asyncHandler(async (req, res) => {
@@ -214,11 +215,11 @@ const checkout = asyncHandler(async (req, res) => {
     }
 
 
-    const orderItems = []
+    const items = []
     let totalPrice = 0
 
     for (const item of cart.items) {
-        const product = item.product
+        const product = item.productId
 
         if (!product) {
             throw new ApiError(400, "Product not found")
@@ -228,11 +229,16 @@ const checkout = asyncHandler(async (req, res) => {
             throw new ApiError(400, `Not enogh stock avaliable fro ${product.name}`)
         }
 
-        orderItems.push({
-            productId: product._id,
-            quantity: item.quantity,
-            price: product.price
-        })
+        const orderItem = await OrderItem.create(
+            {
+                productId: product._id,
+                quantity: item.quantity,
+                price: product.price
+            }
+        )
+
+
+        items.push(orderItem._id)
 
         totalPrice += product.price * item.quantity
 
@@ -259,9 +265,9 @@ const checkout = asyncHandler(async (req, res) => {
     const order = await Order.create(
         {
             userId,
-            items: orderItems,
+            items,
             status: "pending",
-            shippindAddress: address._id,
+            shippingAddress: address._id,
             totalPrice
         }
     )
