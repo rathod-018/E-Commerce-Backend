@@ -3,11 +3,12 @@ import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { Product } from "../models/product.model.js"
 import { Categories } from "../models/categories.model.js"
+import { isValidObjectId } from "mongoose"
 
 const createProduct = asyncHandler(async (req, res) => {
 
     const { sellerId } = req.params
-    if (!sellerId?.trim() || !isValidObjectId(sellerId)) {
+    if (!sellerId.trim() || !isValidObjectId(sellerId)) {
         throw new ApiError(400, "invalid userId")
     }
 
@@ -51,7 +52,7 @@ const createProduct = asyncHandler(async (req, res) => {
 
 const getProduct = asyncHandler(async (req, res) => {
     const { productId } = req.params
-    if (!productId.trim() || !isValidObjectId(productId)) {
+    if (!productId || !productId.trim() || !isValidObjectId(productId)) {
         throw new ApiError(400, "invalid productId")
     }
 
@@ -69,7 +70,7 @@ const getProduct = asyncHandler(async (req, res) => {
 
 const updateProduct = asyncHandler(async (req, res) => {
     const { productId } = req.params
-    if (!productId?.trim() || !isValidObjectId(productId)) {
+    if (!productId || !productId?.trim() || !isValidObjectId(productId)) {
         throw new ApiError(400, "invalid productId")
     }
     const { name, description, price, stockQty, category } = req.body
@@ -81,12 +82,18 @@ const updateProduct = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Price and stock quantity are required")
     }
 
+    const getCategory = await Categories.findOne({ name: category })
+
+    if (!getCategory) {
+        throw new ApiError(400, "Invalid category")
+    }
+
     const updatedProduct = await Product.findByIdAndUpdate(productId, {
         name,
         description,
         price,
         stockQty,
-        category
+        category: getCategory._id
     }, { new: true }).populate("sellerId", "-password").populate("category")
 
     if (!updatedProduct) {
@@ -123,7 +130,7 @@ const listProducts = asyncHandler(async (req, res) => {
     const { sortBy } = req.query.sortBy || "createdAt"
     const sortOrder = req.query.sortOrder === "desc" ? -1 : 1
 
-    const aggregation = await Product.aggregate([
+    const aggregation = Product.aggregate([
         {
             $lookup: {
                 from: "users",
