@@ -40,7 +40,7 @@ const addAddress = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Error while creating address")
     }
 
-    return res.state(200).json(
+    return res.status(200).json(
         new ApiResponse(200, createdAddress, "Address created successfully")
     )
 })
@@ -86,7 +86,7 @@ const getAlladdress = asyncHandler(async (req, res) => {
     }
 
     return res.status(200).json(
-        new ApiError(200, alladdress, "address fetched successfully")
+        new ApiResponse(200, alladdress, "address fetched successfully")
     )
 })
 
@@ -195,7 +195,7 @@ const deleteAddress = asyncHandler(async (req, res) => {
     await address.deleteOne()
 
     return res.status(200).json(
-        new ApiError(200, {}, "Address deleted successfully")
+        new ApiResponse(200, {}, "Address deleted successfully")
     )
 
 
