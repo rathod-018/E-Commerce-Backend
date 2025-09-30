@@ -12,16 +12,21 @@ import { upload } from "../middleware/multer.middleware.js"
 import { verifyRole } from "../middleware/verifyRole.middleware.js"
 const router = Router()
 
-router.route("/me").get(verifyJWT, getCurrentUser)
-router.route("/me/update").post(verifyJWT, upload.single("avatar"), updateCurrentUser)
-router.route("/me/password").post(verifyJWT, changePassword)
+router.use(verifyJWT)
+
+router.route("/me").get(getCurrentUser)
+router.route("/me/update").patch(upload.single("avatar"), updateCurrentUser)
+router.route("/me/password").patch(changePassword)
 
 
 // admin only route
 
+router.use(verifyRole("admin"))
+
 router.route("/admin/:userId")
-    .get(verifyJWT, verifyRole("admin"), getUserById)
-    .patch(verifyJWT, verifyRole("admin"), updateUserRole)
-router.route("/admin/users").get(verifyJWT, verifyRole("admin"), getAllUser)
+    .get(getUserById)
+    .patch(updateUserRole)
+
+router.route("/admin").get(getAllUser)
 
 export default router
