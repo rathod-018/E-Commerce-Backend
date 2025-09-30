@@ -101,7 +101,7 @@ const updateUserRole = asyncHandler(async (req, res) => {
     const { userId } = req.params
     const { role } = req.body
 
-    if (!userId.trim() && !isValidObjectId(userId)) {
+    if (!userId || !userId.trim() && !isValidObjectId(userId)) {
         throw new ApiError(400, "Invalid userId")
     }
 
@@ -124,7 +124,7 @@ const updateUserRole = asyncHandler(async (req, res) => {
 
     if (user.role.toString() === role) {
         return res.status(200).json(
-            new ApiError(200, {}, "new role should not be same as old role")
+            new ApiResponse(200, {}, "new role should not be same as old role")
         )
     }
 
@@ -139,7 +139,6 @@ const updateUserRole = asyncHandler(async (req, res) => {
 
 
 const getAllUser = asyncHandler(async (req, res) => {
-    // const { page, limit, field, sortType, role } = req.query
 
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 3;
@@ -147,12 +146,14 @@ const getAllUser = asyncHandler(async (req, res) => {
     const sortBy = req.query.sortBy || "createdAt"
     const sortType = req.query.sortType === "desc" ? -1 : 1;
 
-    const match = {}
-    if (matchRole !== "all") {
-        match.role = matchRole.toLowerCase()
+    const match = {};
+    if (matchRole.toLowerCase() !== "all") {
+        match.role = matchRole.toLowerCase().trim()
     }
 
-    const aggrigate = await User.aggregate([
+    // console.log(match)
+
+    const aggrigate = User.aggregate([
         {
             $match: match
         },
