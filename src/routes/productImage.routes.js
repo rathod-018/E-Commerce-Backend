@@ -17,7 +17,7 @@ router.use(verifyJWT)
 router.route("/:productId").get(getAllImageOfProduct)
 
 //seller only route
-router.route("/create/:productId").post(verifyRole("seller"), upload.array("images", 5), uploadProductImage)
+router.route("/upload/:productId").post(verifyRole("seller"), upload.array("images", 5), uploadProductImage)
 
 // seller and admin routes
 router.use(verifyRole("seller", "admin"))
