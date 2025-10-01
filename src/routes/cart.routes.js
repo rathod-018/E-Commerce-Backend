@@ -25,6 +25,6 @@ router.route("/remove-item/:productId").patch(removeCartItem)
 router.route("/").get(getCart)
 
 // checkout route
-router.route("/checkout").post(checkout)
+router.route("/checkout/:addressId").post(checkout)
 
 export default router
