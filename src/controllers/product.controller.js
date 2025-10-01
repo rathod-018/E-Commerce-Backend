@@ -35,6 +35,7 @@ const createProduct = asyncHandler(async (req, res) => {
             stockQty,
             category,
             sellerId,
+            productImage: [],
             category: getCategory._id
         })
 
