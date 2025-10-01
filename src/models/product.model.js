@@ -26,7 +26,13 @@ const productSchema = new Schema(
         category: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Categories"
-        }
+        },
+        productImage: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "ProductImage"
+            }
+        ]
     },
     {
         timestamps: true
