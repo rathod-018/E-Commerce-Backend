@@ -15,7 +15,7 @@ const uploadProductImage = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid productId")
     }
 
-    const product = await Product.findById(productId)
+    let product = await Product.findById(productId)
     if (!product) {
         throw new ApiError(404, "Product not found")
     }
@@ -31,89 +31,60 @@ const uploadProductImage = asyncHandler(async (req, res) => {
         }
 
         const prodImage = await ProductImage.create({
-            productId,
             url: img.secure_url,
             public_id: img.public_id
         })
-
-        uploadedFiles.push(prodImage)
+        uploadedFiles.push(prodImage._id)
 
     }
+    product.productImage = uploadedFiles
+    await product.save()
+
+    const updatedProduct = await Product.findById(product._id).populate("productImage")
 
     return res.status(200).json(
-        new ApiResponse(200, uploadedFiles, "Product Image uploaded successfully")
-    )
-})
-
-
-const getAllImageOfProduct = asyncHandler(async (req, res) => {
-    const { productId } = req.params;
-
-    if (!productId || !productId.trim() || !isValidObjectId(productId)) {
-        throw new ApiError(400, "Invalid productId");
-    }
-
-    const images = await ProductImage.find({ productId }).sort({ createdAt: -1 });
-
-    if (!images.length) {
-        return res.status(200).json(
-            new ApiResponse(200, [], "No images found for this product")
-        )
-    }
-
-    return res.status(200).json(
-        new ApiResponse(200, images, "Images fetched successfully")
+        new ApiResponse(200, updatedProduct, "Product Image uploaded successfully")
     )
 })
 
 
 const updateProductImage = asyncHandler(async (req, res) => {
-    const { productId, imageId } = req.params
+    const { productId, imageId } = req.params;
 
-    if (!productId || !isValidObjectId(productId)) {
+    if (!productId || !isValidObjectId(productId))
         throw new ApiError(400, "Invalid productId");
-    }
-    if (!imageId || !isValidObjectId(imageId)) {
+
+    if (!imageId || !isValidObjectId(imageId))
         throw new ApiError(400, "Invalid imageId");
-    }
 
     const product = await Product.findById(productId);
-    if (!product) {
-        throw new ApiError(404, "Product not found");
-    }
+    if (!product) throw new ApiError(404, "Product not found");
 
     const imageDoc = await ProductImage.findById(imageId);
-    if (!imageDoc) {
-        throw new ApiError(404, "Image not found");
-    }
+    if (!imageDoc) throw new ApiError(404, "Image not found");
 
-    const result = await deleteFromCludinary(imageDoc?.public_id, "image")
+    if (!req.file || !req.file.path)
+        throw new ApiError(400, "No image file uploaded");
 
-    if (result?.result !== "ok" && result.result !== "not found") {
-        throw new ApiError(500, "Failed to delete image from cludinary")
-    }
 
-    const imageLocalPath = req.file.path
+    const result = await deleteFromCludinary(imageDoc.public_id, "image");
+    if (result?.result !== "ok" && result.result !== "not found")
+        throw new ApiError(500, "Failed to delete image from Cloudinary");
 
-    if (!imageLocalPath) {
-        throw new ApiError(400, "no image file uploaded")
-    }
 
-    const newImage = await uploadOnCludinary(imageLocalPath)
-    if (!newImage) {
-        throw new ApiError(400, "Error while uploading file on cludinary")
-    }
+    const newImage = await uploadOnCludinary(req.file.path);
+    if (!newImage) throw new ApiError(400, "Error uploading file to Cloudinary");
 
-    imageDoc.url = newImage.secure_url
-    imageDoc.public_id = newImage.public_id
 
-    await imageDoc.save()
+    imageDoc.url = newImage.secure_url;
+    imageDoc.public_id = newImage.public_id;
+    await imageDoc.save();
 
     return res.status(200).json(
         new ApiResponse(200, imageDoc, "Image updated successfully")
-    )
-
+    );
 })
+
 
 
 const deleteProductImage = asyncHandler(async (req, res) => {
@@ -152,7 +123,6 @@ const deleteProductImage = asyncHandler(async (req, res) => {
 
 export {
     uploadProductImage,
-    getAllImageOfProduct,
     updateProductImage,
     deleteProductImage
 }
