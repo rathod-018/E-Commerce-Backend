@@ -2,10 +2,6 @@ import mongoose, { Schema } from "mongoose";
 
 const productImageSchema = new Schema(
     {
-        productId: {
-            type: String,
-            required: true
-        },
         url: {
             type: String,
             required: true
