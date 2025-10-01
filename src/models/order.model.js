@@ -1,24 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-
-const orderItemSchema = new Schema(
-    {
-        productId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Product"
-        },
-        quantity: {
-            type: Number,
-            require: true
-        },
-        price: {
-            type: Number,
-            required: true
-        }
-    },
-    {
-        _id: false
-    }
-)
+import aggregatePaginate from "mongoose-aggregate-paginate-v2"
 
 const orderSchema = new Schema(
     {
@@ -26,14 +7,22 @@ const orderSchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
         },
-        items: [orderItemSchema],
-        satus: {
+        sellerId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        },
+        items: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "OrderItem"
+            }],
+        status: {
             type: String,
             required: true,
             enum: ["pending", "conformed", "shipped", "completed", "cancelled"],
             default: "pending"
         },
-        shippindAddress: {
+        shippingAddress: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Address"
         },
@@ -47,5 +36,6 @@ const orderSchema = new Schema(
     }
 )
 
+orderSchema.plugin(aggregatePaginate)
 
 export const Order = mongoose.model("Order", orderSchema)
