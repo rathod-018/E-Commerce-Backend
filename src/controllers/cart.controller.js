@@ -7,6 +7,7 @@ import { Cart } from "../models/cart.model.js"
 import { Address } from "../models/address.model.js"
 import { Order } from "../models/order.model.js"
 import { OrderItem } from "../models/orderItem.model.js"
+import { CartItem } from "../models/cartItem.model.js"
 
 
 const addCartItem = asyncHandler(async (req, res) => {
@@ -40,20 +41,35 @@ const addCartItem = asyncHandler(async (req, res) => {
         })
     }
 
-    let cartItem = cart.items.find((item) => item.productId?.toString() === product._id.toString())
+
+    let cartItem = await CartItem.findOne({
+        _id: { $in: cart.items },
+        product: productId
+    })
+
 
     if (cartItem) {
         cartItem.quantity += quantity
+        await cartItem.save()
     }
     else {
-        cart.items.push(
-            {
-                productId: product._id,
-                quantity
-            })
+        cartItem = await CartItem.create({
+            product: productId,
+            quantity
+        })
+
+        cart.items.push(cartItem._id)
+        await cart.save()
     }
 
-    await cart.save()
+    cart = await Cart.findById(cart._id)
+        .populate({
+            path: "items",
+            populate: {
+                path: "product",
+                model: "Product"
+            }
+        })
 
     return res.status(200).json(
         new ApiResponse(200, cart, "Product successfully added to cart")
@@ -85,21 +101,33 @@ const updateCartItem = asyncHandler(async (req, res) => {
         throw new ApiError(400, "quantity must be greter than 0")
     }
 
-    const cart = await Cart.findOne({ userId, status: "active" })
+    let cart = await Cart.findOne({ userId, status: "active" })
 
     if (!cart) {
         throw new ApiError(400, "User does not have any active cart")
     }
 
-    const cartItem = cart.items?.find((item) => item.productId?.toString() === product._id.toString())
+    const cartItem = await CartItem.findOne({
+        product: productId,
+        _id: { $in: cart.items }
+    })
 
     if (!cartItem) {
         throw new ApiError(404, "Item not found in cart")
     }
 
-    cartItem.quantity += quantity
+    cartItem.quantity = quantity
 
-    await cart.save()
+    await cartItem.save()
+
+    cart = await Cart.findById(cart._id)
+        .populate({
+            path: "items",
+            populate: {
+                path: "product",
+                model: "Product"
+            }
+        })
 
     return res.status(200).json(
         new ApiResponse(200, cart, "Cart item updated successfully")
@@ -127,22 +155,31 @@ const removeCartItem = asyncHandler(async (req, res) => {
         throw new ApiError(400, "User does not have any active cart")
     }
 
-    const itemExist = cart.items?.some(
-        (item) => item.productId?.toString() === product._id.toString()
-    )
+    const cartItem = await CartItem.findOne({
+        _id: { $in: cart.items },
+        product: productId
+    })
 
-    if (!itemExist) {
+    if (!cartItem) {
         throw new ApiError(404, "Product does not exist in cart")
     }
 
-    cart.items = cart.items?.filter(
-        (item) => item.productId?.toString() === product._id.toString()
-    )
+    const updatedCart = await Cart.findByIdAndUpdate(
+        cart._id,
+        { $pull: { items: cartItem._id } },
+        { new: true }
+    ).populate({
+        path: "items",
+        populate: {
+            path: "product",
+            model: "Product"
+        }
+    })
 
-    await cart.save()
+    await cartItem.deleteOne()
 
     return res.status(200).json(
-        new ApiResponse(200, cart, "Item removed from cart successfully")
+        new ApiResponse(200, updatedCart, "Item removed from cart successfully")
     )
 })
 
@@ -150,56 +187,22 @@ const removeCartItem = asyncHandler(async (req, res) => {
 const getCart = asyncHandler(async (req, res) => {
     const userId = req.user._id
 
-    const cart = await Cart.aggregate([
-        {
-            $match: {
-                userId: new mongoose.Types.ObjectId(userId),
-                status: "active"
+    const cart = await Cart.findOne({ userId, status: "active" })
+        .populate({
+            path: "items",
+            populate: {
+                path: "product",
+                model: "Product"
             }
-        },
-        {
-            $unwind: "$items"
-        },
-        {
-            $lookup: {
-                from: "products",
-                localField: "items.product",
-                foreignField: "_id",
-                as: "item.productInfo",
-                pipeline: [
-                    {
-                        $lookup: {
-                            from: "productImages",
-                            localField: "_id",
-                            foreignField: "productId",
-                            as: "images",
-                            pipeline: [
-                                { $project: { url: 1 } },
-                                { $limit: 1 }
-                            ]
-                        }
-                    },
-                    {
-                        $project: {
-                            sellerId: 0,
-                            image: { $arrayElemAt: ["$images.url", 0] }
-                        }
-                    }
-                ]
-            }
-        },
-        { $project: { userId: 0 } }
-    ])
-
-
-    if (!cart.length) {
+        })
+    if (!cart) {
         return res.status(200).json(
             new ApiResponse(200, {}, "User done not have any element in cart")
         )
     }
 
     return res.status(200).json(
-        new ApiResponse(200, cart[0], "Cart items fetched successfully")
+        new ApiResponse(200, cart, "Cart items fetched successfully")
     )
 })
 
@@ -208,7 +211,14 @@ const checkout = asyncHandler(async (req, res) => {
     const userId = req.user._id
     const { addressId } = req.params
 
-    const cart = await Cart.findOne({ userId, status: "active" }).populate("items.product")
+    const cart = await Cart.findOne({ userId, status: "active" })
+        .populate({
+            path: "items",
+            populate: {
+                path: "product",
+                model: "Product"
+            }
+        })
 
     if (!cart || !cart.items.length) {
         throw new ApiError(400, "Cart is empty")
@@ -219,7 +229,7 @@ const checkout = asyncHandler(async (req, res) => {
     let totalPrice = 0
 
     for (const item of cart.items) {
-        const product = item.productId
+        const product = item.product
 
         if (!product) {
             throw new ApiError(400, "Product not found")
@@ -231,7 +241,7 @@ const checkout = asyncHandler(async (req, res) => {
 
         const orderItem = await OrderItem.create(
             {
-                productId: product._id,
+                product: product._id,
                 quantity: item.quantity,
                 price: product.price
             }
@@ -277,8 +287,18 @@ const checkout = asyncHandler(async (req, res) => {
     cart.items = []
     await cart.save()
 
+    const createdOrder = await Order.findById(order._id)
+        .populate({
+            path: "items",
+            populate: {
+                path: "product",
+                model: "Product"
+            }
+        })
+        .populate({ path: "shippingAddress" })
+
     return res.status(201).json(
-        new ApiResponse(201, order, "Order placed successfully")
+        new ApiResponse(201, createdOrder, "Order placed successfully")
     )
 })
 
