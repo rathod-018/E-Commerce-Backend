@@ -3,7 +3,6 @@ import { verifyJWT } from "../middleware/auth.middleware.js"
 import { verifyRole } from "../middleware/verifyRole.middleware.js"
 import {
     uploadProductImage,
-    getAllImageOfProduct,
     updateProductImage,
     deleteProductImage
 } from "../controllers/productImage.controller.js"
@@ -12,9 +11,6 @@ import { upload } from "../middleware/multer.middleware.js"
 const router = Router()
 
 router.use(verifyJWT)
-
-// public route
-router.route("/:productId").get(getAllImageOfProduct)
 
 //seller only route
 router.route("/upload/:productId").post(verifyRole("seller"), upload.array("images", 5), uploadProductImage)
