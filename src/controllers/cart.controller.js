@@ -8,6 +8,7 @@ import { Address } from "../models/address.model.js"
 import { Order } from "../models/order.model.js"
 import { OrderItem } from "../models/orderItem.model.js"
 import { CartItem } from "../models/cartItem.model.js"
+import { populate } from "dotenv"
 
 
 const addCartItem = asyncHandler(async (req, res) => {
@@ -225,8 +226,8 @@ const checkout = asyncHandler(async (req, res) => {
     }
 
 
-    const items = []
-    let totalPrice = 0
+    // group product by sellerId
+    const groupBySeller = {}
 
     for (const item of cart.items) {
         const product = item.product
@@ -247,13 +248,17 @@ const checkout = asyncHandler(async (req, res) => {
             }
         )
 
-
-        items.push(orderItem._id)
-
-        totalPrice += product.price * item.quantity
-
         product.stockQty -= item.quantity
         await product.save();
+
+        const sellerId = product.sellerId.toString()
+
+        if (!groupBySeller[sellerId]) {
+            groupBySeller[sellerId] = []
+        }
+
+        groupBySeller[sellerId].push(orderItem)
+
     }
 
 
@@ -269,33 +274,52 @@ const checkout = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid addressId")
     }
 
+    // create order for each seller
 
-    // create order
+    const createdOrder = []
+    for (const [sellerId, orderItems] of Object.entries(groupBySeller)) {
+        let totalPrice = 0
 
-    const order = await Order.create(
-        {
-            userId,
-            items,
-            status: "pending",
-            shippingAddress: address._id,
-            totalPrice
+        orderItems.forEach(item => {
+            const price = item.price
+            totalPrice += price * item.quantity
+        })
+
+        const items = orderItems.map(item => item._id)
+
+        const order = await Order.create(
+            {
+                userId,
+                sellerId,
+                items,
+                status: "pending",
+                shippingAddress: address._id,
+                totalPrice
+            }
+        )
+
+        const populatedOrder = await Order.findById(order._id)
+            .populate({
+                path: "items",
+                populate: {
+                    path: "product",
+                    model: "Product"
+                }
+            })
+            .populate("shippingAddress")
+
+        if (!populatedOrder) {
+            throw new ApiError(400, "Error while creating order")
         }
-    )
+
+        createdOrder.push(populatedOrder)
+
+    }
 
 
     // clear cart
-    cart.items = []
-    await cart.save()
-
-    const createdOrder = await Order.findById(order._id)
-        .populate({
-            path: "items",
-            populate: {
-                path: "product",
-                model: "Product"
-            }
-        })
-        .populate({ path: "shippingAddress" })
+    // cart.items = []
+    // await cart.save()
 
     return res.status(201).json(
         new ApiResponse(201, createdOrder, "Order placed successfully")
